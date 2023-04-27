@@ -1,0 +1,85 @@
+<!doctype html>
+
+<title>CodeMirror: ArangoDB (AQL) mode</title>
+<meta charset="utf-8"/>
+<link rel=stylesheet href="../../doc/docs.css">
+
+<link rel="stylesheet" href="../../lib/codemirror.css">
+<script src="../../lib/codemirror.js"></script>
+<script src="../../addon/edit/matchbrackets.js"></script>
+<script src="aql.js"></script>
+<style>.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
+<div id=nav>
+  <a href="https://codemirror.net/5"><h1>CodeMirror</h1><img id=logo src="../../doc/logo.png" alt=""></a>
+
+  <ul>
+    <li><a href="../../index.html">Home</a>
+    <li><a href="../../doc/manual.html">Manual</a>
+    <li><a href="https://github.com/codemirror/codemirror5">Code</a>
+  </ul>
+  <ul>
+    <li><a href="../index.html">Language modes</a>
+    <li><a class=active href="#">ArangoDB (AQL)</a>
+  </ul>
+</div>
+
+<article>
+<h2>ArangoDB (AQL) mode</h2>
+<form><textarea id="code" name="code">
+/* this is a comment */ RETURN 1
+/* these */ RETURN /* are */ 1 /* multiple */ + /* comments */ 1
+/* this is
+   a multi line
+   comment */
+// a single line comment
+
+FOR doc IN `filter` RETURN doc.`sort`
+FOR f IN ´filter´ RETURN f.´sort´
+FOR f IN `filter` RETURN f["sort"]
+
+FOR v, e, p IN 1..2 INBOUND 'nodes_/test1'
+    GRAPH graph1
+    OPTIONS { uniqueVertices: 'path', maxIterations: 100000} // inline comment
+    FILTER p.edges[0].hs_codes == 820559 AND p.edges[1].hs_codes == 950300 AND p.edges[*].actual_arrival_date ALL >= '2018-01' AND p.edges[*].actual_arrival_date ALL <= '2023-02'
+    LIMIT 500000
+    RETURN e
+
+LET st = (FOR i IN 1..100 INSERT {code: TO_STRING(i % 40)} INTO students RETURN NEW._id)
+LET f = (FOR e IN [sc, jo] FOR ee IN e SORT RAND() RETURN ee)
+FOR s IN st
+  INSERT {_from: f[RAND()*LENGTH(f)], _to: s} IN attendance RETURN NEW
+
+FOR student IN students
+    FILTER student.code == @code
+    LET school_key = FIRST(
+        FOR school, edge IN INBOUND student attendance
+            FILTER LIKE(edge,_from, 'schools/%')
+            LET school_key = school._key
+
+            REMOVE edge IN attendance
+            RETURN school_key
+    )
+    RETURN { [student.code]: school_key }
+
+FOR u IN @@users
+  FILTER u.id == CONCAT('prefix', @id, 'suffix') && u.name == @name
+  RETURN u
+
+LET maybe = DOCUMENT("coll/does_not_exist")
+LET dependent = maybe ? (
+  FOR attr IN NOT_NULL(ATTRIBUTES(maybe || {}), [])
+    RETURN attr
+) : "document not found"
+RETURN dependent
+
+</textarea></form>
+    <script>
+      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
+        mode: "text/x-aql",
+        matchBrackets: true
+      });
+    </script>
+
+    <p><strong>MIME types defined:</strong> <code>text/x-aql</code>.</p>
+
+  </article>
